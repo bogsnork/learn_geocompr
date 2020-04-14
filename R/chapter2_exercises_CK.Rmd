@@ -1,0 +1,98 @@
+---
+title: "chapter 2 exercises"
+output: html_notebook
+---
+## 2.6 Exercises
+
+```{r}
+library(sf)
+library(spData)
+library(spDataLarge)
+```
+
+
+### Exercise 1
+
+>Use summary() on the geometry column of the world data object. 
+
+```{r}
+summary(world)
+```
+
+
+>What does the output tell us about:   
+
+>* Its geometry type?  
+
+It's a multipolygon, containing 177 polygons (presumably one for each country).  I don't understand the other two fields.  
+
+>* The number of countries?
+
+177
+
+>* Its coordinate reference system (CRS)?
+
+is it epsg: 4386?
+
+### Exercise 2 
+
+>Run the code that ‘generated’ the map of the world in Figure 2.5 at the end of Section 2.2.4. Find two similarities and two differences between the image on your computer and that in the book.
+
+```{r}
+plot(world["continent"], reset = FALSE)
+cex = (world$pop) / 100000000
+world_cents = st_centroid(world, of_largest = TRUE)
+plot(st_geometry(world_cents), add = TRUE, cex = cex, colour = )
+```
+
+>differences
+
+* different projection
+* includes a legend and a title
+* symbols in different places and outline not bold
+* no meridians
+
+>similarities
+
+* colours same
+* 
+
+>What does the cex argument do (see ?plot)?
+
+scales the plotting symbol by population
+
+>Why was cex set to the sqrt(world$pop) / 10000?
+
+```{r}
+hist(sqrt(world$pop) / 10000)
+hist(world$pop)
+```
+
+to constrain it to a reasonable scale for the cex parameter, and to avoid huge disparities (e.g. pop of India and China) although the caption is a bit misleading adn should have said that it's proportional to the square root of the population.  
+
+>Bonus: experiment with different ways to visualize the global population.
+
+
+```{r}
+plot(world["continent"], reset = FALSE)
+cex = (world$pop/max(world$pop, na.rm = T))*4
+world_cents = st_centroid(world, of_largest = TRUE)
+plot(st_geometry(world_cents), add = TRUE, cex = cex)
+```
+
+
+>Use plot() to create maps of Nigeria in context (see Section 2.2.4).
+>Adjust the lwd, col and expandBB arguments of plot().
+>Challenge: read the documentation of text() and annotate the map.
+
+```{r}
+nigeria <- world[which(world$name_long == "Nigeria"),]
+plot(st_geometry(nigeria), expandBB = c(1.2, 0.5, 1.2, 0.5), lwd = 2)
+plot(st_geometry(world), add = T)
+text(world$name_long)
+```
+
+
+Create an empty RasterLayer object called my_raster with 10 columns and 10 rows. Assign random values between 0 and 10 to the new raster and plot it.
+Read-in the raster/nlcd2011.tif file from the spDataLarge package. What kind of information can you get about the properties of this file?
+
