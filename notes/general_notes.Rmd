@@ -246,4 +246,189 @@ library(spData)
 ```
 
 
+# Chapter 3 Attribute data operations
+
+```{r}
+library(sf)
+library(raster)
+library(dplyr)
+library(stringr) # for working with strings (pattern matching)
+library(tidyr) # for unite() and separate()
+
+library(spData)
+```
+
+```{r}
+methods(class = "sf")
+```
+
+?? what does the ST stand for?
+
+```{r}
+class(world)
+world_df = st_drop_geometry(world)
+class(world_df)
+```
+```{r}
+sel_area = world$area_km2 < 10000
+summary(sel_area) # a logical vector
+#>    Mode   FALSE    TRUE 
+#> logical     170       7
+small_countries = world[sel_area, ]
+```
+
+
+```{r}
+small_countries = world[world$area_km2 < 10000, ]
+```
+
+```{r}
+world1 = dplyr::select(world, name_long, pop)
+names(world1)
+```
+
+
+```{r}
+# all columns between name_long and pop (inclusive)
+world2 = dplyr::select(world, name_long:pop)
+world3 = dplyr::select(world, -subregion, -area_km2)
+```
+
+```{r}
+world4 = dplyr::select(world, name_long, population = pop)
+names(world4)
+#> [1] "name_long"  "population" "geom"
+```
+
+```{r}
+world5 = world[, c("name_long", "pop")] # subset columns by name
+names(world5)[names(world5) == "pop"] = "population" # rename column manually
+```
+
+```{r}
+# create throw-away data frame
+d = data.frame(pop = 1:10, area = 1:10)
+# return data frame object when selecting a single column
+d[, "pop", drop = FALSE] # equivalent to d["pop"]
+select(d, pop)
+# return a vector when selecting a single column
+d[, "pop"]
+pull(d, pop)
+```
+
+```{r}
+# data frame object
+world[, "pop"]
+# vector objects
+world$pop
+pull(world, pop)
+```
+
+```{r}
+slice(world, 3:5)
+```
+
+```{r}
+# Countries with a life expectancy longer than 82 years
+world6 = filter(world, lifeExp > 82)
+```
+
+```{r}
+world7 = world %>%
+  filter(continent == "Asia") %>%
+  dplyr::select(name_long, continent) %>%
+  slice(1:5)
+```
+
+```{r}
+world8 = slice(
+  dplyr::select(
+    filter(world, continent == "Asia"),
+    name_long, continent),
+  1:5)
+```
+
+## Vector attribute aggregation 
+```{r}
+world_agg1 = aggregate(pop ~ continent, FUN = sum, data = world, na.rm = TRUE)
+class(world_agg1)
+#> [1] "data.frame"
+```
+
+```{r}
+world_agg2 = aggregate(world["pop"], by = list(world$continent),
+                       FUN = sum, na.rm = TRUE)
+class(world_agg2)
+plot(world_agg2)
+#> [1] "sf"         "data.frame"
+```
+
+```{r}
+world_agg3 = world %>%
+  group_by(continent) %>%
+  summarize(pop = sum(pop, na.rm = TRUE))
+```
+
+```{r}
+world %>% 
+  dplyr::select(pop, continent) %>% 
+  group_by(continent) %>% 
+  summarize(pop = sum(pop, na.rm = TRUE), n_countries = n()) %>% 
+  top_n(n = 3, wt = pop) %>%
+  arrange(desc(pop)) %>%
+  st_drop_geometry()
+```
+
+## 3.2.3 Vector attribute joining
+
+```{r}
+world_coffee = left_join(world, coffee_data)
+#> Joining, by = "name_long"
+class(world_coffee)
+#> [1] "sf"         "tbl_df"     "tbl"        "data.frame"
+```
+
+```{r}
+names(world_coffee)
+#>  [1] "iso_a2"                 "name_long"              "continent"             
+#>  [4] "region_un"              "subregion"              "type"                  
+#>  [7] "area_km2"               "pop"                    "lifeExp"               
+#> [10] "gdpPercap"              "geom"                   "coffee_production_2016"
+#> [13] "coffee_production_2017"
+plot(world_coffee["coffee_production_2017"])
+```
+
+```{r}
+coffee_renamed = rename(coffee_data, nm = name_long)
+world_coffee2 = left_join(world, coffee_renamed, by = c(name_long = "nm"))
+```
+
+
+```{r}
+world_coffee_inner = inner_join(world, coffee_data)
+#> Joining, by = "name_long"
+nrow(world_coffee_inner)
+#> [1] 45
+```
+
+```{r}
+setdiff(coffee_data$name_long, world$name_long)
+#> [1] "Congo, Dem. Rep. of" "Others"
+```
+
+```{r}
+coffee_data$name_long[grepl("Congo,", coffee_data$name_long)] = 
+  str_subset(world$name_long, "Dem*.+Congo")
+world_coffee_match = inner_join(world, coffee_data)
+#> Joining, by = "name_long"
+nrow(world_coffee_match)
+#> [1] 46
+```
+
+
+```{r}
+
+```
+
+
 
