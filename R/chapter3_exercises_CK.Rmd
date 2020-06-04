@@ -10,7 +10,191 @@ library(sf)
 library(spData)
 library(spDataLarge)
 library(raster)
+
+library(stringr) # for working with strings (pattern matching)
+library(tidyr)   # for unite() and separate()
 ```
 
 
 ### Exercise 1
+Create a new object called us_states_name that contains only the NAME column from the us_states object. What is the class of the new object and what makes it geographic?
+
+```{r}
+data(us_states)
+data(us_states_df)
+```
+
+
+```{r}
+us_states
+
+us_states_name <- us_states["NAME"]
+class(us_states_name)
+```
+
+# 2  Select columns from the us_states object which contain population data. Obtain the same result using a different command (bonus: try to find three ways of obtaining the same result). Hint: try to use helper functions, such as contains or starts_with from dplyr (see ?contains).
+
+```{r}
+us_states[c("total_pop_10", "total_pop_15")]
+us_states %>% select(total_pop_10, total_pop_15)
+us_states %>% select_at(vars(contains("pop")))
+us_states %>% select_at(vars(starts_with("total")))
+```
+# 3
+Find all states with the following characteristics (bonus find and plot them):  
+
+* Belong to the Midwest region.
+* Belong to the West region, have an area below 250,000 km2 and in 2015 a population greater than 5,000,000 residents (hint: you may need to use the function units::set_units() or as.numeric()).
+* Belong to the South region, had an area larger than 150,000 km2 or a total population in 2015 larger than 7,000,000 residents.
+
+```{r}
+names(us_states)
+```
+* Belong to the Midwest region.
+
+```{r}
+us_states %>% filter(REGION == "Midwest") %>% plot()
+
+
+```
+* Belong to the West region, have an area below 250,000 km2 and in 2015 a population greater than 5,000,000 residents (hint: you may need to use the function units::set_units() or as.numeric()).
+```{r}
+str(us_states)
+us_states %>%
+  filter(REGION == "West" & 
+           #as.numeric(AREA) < 250000 &
+           AREA < set_units(250000, "km^2") &
+           total_pop_15 > 5000000)
+
+```
+* Belong to the South region, had an area larger than 150,000 km2 or a total population in 2015 larger than 7,000,000 residents.
+
+```{r}
+us_states %>%
+  filter(REGION == "South" & as.numeric(AREA) < 150000 & total_pop_15 > 7000000) %>%  plot()
+```
+# 4
+
+What was the total population in 2015 in the us_states dataset? What was the minimum and maximum total population in 2015?
+
+```{r}
+us_states %>%
+  summarise(total = sum(total_pop_15), 
+            min = min(total_pop_15), 
+            max = max(total_pop_15)) #%>% plot()
+
+```
+#5
+How many states are there in each region?
+
+
+
+```{r}
+us_states %>%
+  group_by(REGION) %>%
+  summarise(n = n()) 
+```
+# 6
+What was the minimum and maximum total population in 2015 in each region? What was the total population in 2015 in each region?
+```{r}
+us_states%>%
+  group_by(REGION) %>%
+  summarise(min = min(total_pop_15), 
+            max = max(total_pop_15),
+            total_pop_15 = sum(total_pop_15))
+
+
+aggregate(total_pop_15 ~ REGION, FUN = sum, data = us_states, na.rm = TRUE)
+```
+
+# 7
+
+Add variables from us_states_df to us_states, and create a new object called us_states_stats. 
+
+```{r}
+us_states_stats <- left_join(us_states, us_states_df, by = c(NAME = "state"))
+```
+
+
+What function did you use and why? 
+
+Left join
+
+
+Which variable is the key in both datasets? 
+
+NAME and state
+
+What is the class of the new object?
+```{r}
+class(us_states_stats)
+```
+
+#8
+
+us_states_df has two more rows than us_states. How can you find them? (hint: try to use the dplyr::anti_join() function)
+
+```{r}
+anti_join(us_states_df, us_states, by = c(state = "NAME"))
+
+```
+
+#9
+What was the population density in 2015 in each state? What was the population density in 2010 in each state?
+
+```{r}
+us_states_stats %>% names()
+
+us_states_stats %>% 
+  mutate(density_10 = total_pop_10/AREA, 
+         density_15 = total_pop_15/AREA) %>% 
+  select(NAME, density_10, density_15)
+```
+# 10
+How much has population density changed between 2010 and 2015 in each state? Calculate the change in percentages and map them.
+
+```{r}
+us_density <- us_states_stats %>% 
+  mutate(density_10 = total_pop_10/AREA, 
+         density_15 = total_pop_15/AREA) %>%
+  mutate(density_change = density_10 - density_15)
+
+plot(us_density["density_change"])
+```
+
+# 11
+Change the columns' names in us_states to lowercase. (Hint: helper functions - tolower() and colnames() may help.)
+
+```{r}
+us_states_lc <- us_states
+(names(us_states_lc) <- tolower(names(us_states_lc)))
+```
+
+# 12
+Using us_states and us_states_df create a new object called us_states_sel. The new object should have only two variables - median_income_15 and geometry. Change the name of the median_income_15 column to Income.
+
+```{r}
+us_states_sel <- us_states %>% 
+  left_join(us_states_df, by = c(NAME = "state")) %>% 
+  select(Income = median_income_15, geometry)
+
+us_states_sel
+```
+
+# 13
+Calculate the change in median income between 2010 and 2015 for each state. 
+
+Bonus: What was the minimum, average and maximum median income in 2015 for each region? What is the region with the largest increase of the median income?
+
+```{r}
+us_states_stats %>% mutate(income_change = median_income_10 - median_income_15) %>% 
+  group_by(REGION) %>% 
+  summarise(min = min(median_income_15), mean = mean(median_income_15), max = max(median_income_15), max_increase = max(income_change))
+```
+
+
+
+
+
+
+
