@@ -431,4 +431,11 @@ nrow(world_coffee_match)
 ```
 
 
+# Chapter 8 Making maps with R
+
+```{r}
+i
+```
+
+
 

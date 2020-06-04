@@ -8,6 +8,7 @@ output: html_notebook
 library(sf)
 library(spData)
 library(spDataLarge)
+library(raster)
 ```
 
 
@@ -94,5 +95,15 @@ text(world$name_long)
 
 
 Create an empty RasterLayer object called my_raster with 10 columns and 10 rows. Assign random values between 0 and 10 to the new raster and plot it.
+
+
+```{r}
+my_raster <- raster(nrows = 10, ncols = 10, vals = sample(0:100, 100, replace = T))
+plot(my_raster)
+```
 Read-in the raster/nlcd2011.tif file from the spDataLarge package. What kind of information can you get about the properties of this file?
+
+```{r}
+raster(system.file("raster/nlcd2011.tif", package = "spDataLarge"))
+```
 

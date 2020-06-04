@@ -1,0 +1,16 @@
+---
+title: "chapter 3
+exercises"
+output: html_notebook
+---
+## 2.6 Exercises
+
+```{r}
+library(sf)
+library(spData)
+library(spDataLarge)
+library(raster)
+```
+
+
+### Exercise 1
